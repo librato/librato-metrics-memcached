@@ -1,0 +1,132 @@
+#!/usr/bin/env ruby
+#
+
+require 'rubygems'
+require 'bundler'
+
+Bundler.require
+
+$:.unshift File.join(File.dirname(__FILE__), '../lib')
+
+require 'librato-metrics-memcached'
+
+parser = Trollop::Parser.new do
+  version "librato-metrics-memcached version %s" %
+    [Librato::Metrics::Memcached.version]
+
+  opt :api, "Change the API endpoint", {
+    :type => :string, :default => "metrics-api.librato.com"
+  }
+
+  opt :hosts, "Memcached hosts (host1,host2,etc)", {
+    :type => :string, :default => ENV['MEMCACHED_SERVERS']
+  }
+
+  opt :email, "Librato Metrics Email", {
+    :type => :string, :default => ENV['LIBRATO_METRICS_EMAIL']
+  }
+
+  opt :token, "Librato Metrics API Token", {
+    :type => :string, :default => ENV['LIBRATO_METRICS_TOKEN']
+  }
+
+  opt :prefix, "Metric name prefix", {
+    :type => :string, :default => "memcached."
+  }
+
+  opt :floor_in_secs, "floor() measure times to this interval", {
+    :type => :int
+  }
+end
+
+opts = Trollop::with_standard_exception_handling(parser) do
+  if ARGV.length == 0
+    raise Trollop::HelpNeeded
+  end
+
+  opts = parser.parse ARGV
+  %w{ hosts email token }.each do |f|
+    unless opts[f.to_sym]
+      $stderr.puts "Error: Must specify option --%s." % [f]
+      puts
+      raise Trollop::HelpNeeded
+    end
+  end
+  opts
+end
+
+mt = Time.now.tv_sec
+if opts[:floor_in_secs]
+  mt = (mt / opts[:floor_in_secs]) * opts[:floor_in_secs]
+end
+
+servers = opts[:hosts].split(",")
+
+begin
+  cache = Memcached.new(servers)
+  stats = cache.stats
+rescue => err
+  $stderr.puts "Failed to read stats from memcached: #{err.message}"
+  exit 1
+end
+
+def server_name(n)
+  n.split(":").first
+end
+
+def metric_name(n, opts)
+  ("%s%s" % [opts[:prefix], n]).to_sym
+end
+
+endpoint = "https://#{opts[:api]}"
+client = Librato::Metrics::Client.new
+client.api_endpoint = endpoint
+client.authenticate opts[:email], opts[:token]
+
+q = client.new_queue
+
+stats.each_pair do |stat, values|
+  if values.length != servers.length
+    $stderr.puts "Unable to grab stat #{stat} for each server"
+    exit 1
+  end
+
+  # Skip static stats
+  if %w{pointer_size time version pid}.include?(stat.to_s)
+    next
+  end
+
+  servers.each_with_index do |srv, i|
+    gauges = [:curr_connections, :limit_maxbytes, :bytes,
+              :connection_structures, :curr_items,
+              :rusage_user, :rusage_system, :threads]
+
+    if gauges.include?(stat.to_sym)
+      q.add metric_name(stat, opts) => {
+        :type => :gauge,
+        :value => values[i],
+        :source => server_name(srv),
+        :measure_time => mt
+      }
+    else
+      q.add metric_name(stat, opts) => {
+        :type => :counter,
+        :value => values[i],
+        :source => server_name(srv),
+        :measure_time => mt
+      }
+    end
+  end
+end
+
+begin
+  q.submit
+rescue => err
+  $stderr.puts "Failed to submit stats to Librato Metrics: %s" %
+    [err.message]
+  exit 1
+end
+
+# Local Variables:
+# mode: ruby
+# End:

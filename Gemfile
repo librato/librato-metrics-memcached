@@ -1,7 +1,9 @@
 source "http://rubygems.org"
-# Add dependencies required to use your gem here.
-# Example:
-#   gem "activesupport", ">= 2.3.5"
+
+gem "trollop", "~> 1.16.2"
+gem "memcached", "~> 1.4.1"
+gem "yajl-ruby", "~> 1.1.0", :require => "yajl"
+gem "librato-metrics", "~> 0.5.0", :require => "librato/metrics"
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.

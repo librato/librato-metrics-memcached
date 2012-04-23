@@ -15,11 +15,11 @@ require 'jeweler'
 Jeweler::Tasks.new do |gem|
   # gem is a Gem::Specification... see http://docs.rubygems.org/read/chapter/20 for more options
   gem.name = "librato-metrics-memcached"
-  gem.homepage = "http://github.com/mheffner/librato-metrics-memcached"
+  gem.homepage = "http://github.com/librato/librato-metrics-memcached"
   gem.license = "MIT"
-  gem.summary = %Q{TODO: one-line summary of your gem}
-  gem.description = %Q{TODO: longer description of your gem}
-  gem.email = "mikeh@fesnel.com"
+  gem.summary = %Q{Push memcached stats to Librato Metrics}
+  gem.description = %Q{Pull stats from memcached and push to Librato Metrics}
+  gem.email = "mike@librato.com"
   gem.authors = ["Mike Heffner"]
   # dependencies defined in Gemfile
 end
