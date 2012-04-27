@@ -1,9 +1,10 @@
+require "librato-metrics-memcached/version"
+
 module Librato
   module Metrics
     module Memcached
       def self.version
-        verfile = File.join(File.dirname(__FILE__), '../VERSION')
-        File.read(verfile).chomp
+        VERSION
       end
     end
   end
