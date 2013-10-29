@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency(%q<trollop>, ["~> 1.16.2"])
   s.add_runtime_dependency(%q<memcached>, ["~> 1.4.1"])
   s.add_runtime_dependency(%q<yajl-ruby>, ["~> 1.1.0"])
-  s.add_runtime_dependency(%q<librato-metrics>, ["~> 0.5.0"])
+  s.add_runtime_dependency(%q<librato-metrics>, ["~> 1.1.1"])
 
   s.add_development_dependency(%q<rake>, [">= 0"])
   s.add_development_dependency(%q<shoulda>, [">= 0"])
